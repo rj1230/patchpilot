@@ -1,4 +1,4 @@
-"""PatchPilot Control Plane (Streamlit).
+"""PatchPilot Control Plane (Streamlit) - single-page layout, no sidebar.
 
 Terminal 1 (project root, GROQ_API_KEY set):
     uvicorn --factory patchpilot.api.app:create_app --port 8000
@@ -103,6 +103,19 @@ st.set_page_config(
     page_title="PatchPilot Control Plane",
     page_icon="🛠️",
     layout="wide",
+    initial_sidebar_state="collapsed",
+)
+
+# Hide the sidebar and its collapse/expand controls entirely.
+st.markdown(
+    """
+    <style>
+        [data-testid="stSidebar"],
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="collapsedControl"] { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 
@@ -623,19 +636,21 @@ def task_view(
         st.rerun(scope="app")
 
 
-# --------------------------------------------------------------------- sidebar
-def render_sidebar() -> None:
-    with st.sidebar:
-        st.title("🛠️ PatchPilot")
-        st.radio("Navigate", PAGES, key="page")
-        st.divider()
+# ------------------------------------------------------------------- top bar
+def render_status_and_settings() -> None:
+    """Connection status, settings and navigation, all on the main page."""
+    ok, health = api("GET", "/health")
 
-        ok, health = api("GET", "/health")
+    status_column, settings_column = st.columns([3, 2], vertical_alignment="top")
 
+    with status_column:
         if not ok:
             st.error(health)
         else:
-            st.success("Control plane online")
+            sandbox = health.get("sandbox", "unknown")
+            provider = health.get("provider", "unknown")
+
+            st.success(f"Control plane online · Sandbox: **{sandbox}** · LLM: **{provider}**")
 
             if not health.get("llm_ready", False):
                 st.error(
@@ -643,30 +658,31 @@ def render_sidebar() -> None:
                     "Set `GROQ_API_KEY` and ensure `llm_factory` is provided."
                 )
 
-            sandbox = health.get("sandbox", "unknown")
-
             if sandbox == "local":
                 st.warning(
                     "Sandbox: **local** (development only, not "
                     "network-isolated). Start the API with "
                     "`PATCHPILOT_SANDBOX=docker` for untrusted repositories."
                 )
-            else:
-                st.info(f"Sandbox: **{sandbox}** · LLM: **{health.get('provider', 'unknown')}**")
 
-        st.text_input("API base URL", key="api_base")
-        st.text_input("Reviewer name", key="reviewer")
-        st.toggle("Live auto-refresh", key="auto_refresh")
+    with settings_column:
+        with st.expander("⚙️ Settings"):
+            st.text_input("API base URL", key="api_base")
+            st.text_input("Reviewer name", key="reviewer")
 
-        if st.button("🔄 Refresh now"):
-            st.rerun(scope="app")
+            toggle_column, refresh_column = st.columns(2)
+            toggle_column.toggle("Live auto-refresh", key="auto_refresh")
 
-        st.divider()
-        st.caption(
-            "No auto-merge · protected paths blocked · ephemeral sandbox · "
-            "allowlisted commands · bounded repair · human approval for "
-            "risky changes · tamper-evident audit."
-        )
+            if refresh_column.button("🔄 Refresh now"):
+                st.rerun(scope="app")
+
+    st.radio(
+        "Navigate",
+        PAGES,
+        key="page",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
 
 
 # ------------------------------------------------------------------- dashboard
@@ -716,10 +732,7 @@ def dashboard_body() -> None:
 
 
 def dashboard_page() -> None:
-    if st.session_state["auto_refresh"]:
-        dashboard_body()
-    else:
-        dashboard_body()
+    dashboard_body()
 
     tasks = fetch_tasks()
 
@@ -921,10 +934,11 @@ def approvals_page() -> None:
 
 # ------------------------------------------------------------------------ main
 def main() -> None:
-    render_sidebar()
-
     st.title("🛠️ PatchPilot Control Plane")
     st.caption("The LLM proposes; deterministic policy, sandboxing, tests and human approval decide.")
+
+    render_status_and_settings()
+    st.divider()
 
     page = st.session_state["page"]
 
@@ -936,6 +950,13 @@ def main() -> None:
         task_page()
     else:
         approvals_page()
+
+    st.divider()
+    st.caption(
+        "No auto-merge · protected paths blocked · ephemeral sandbox · "
+        "allowlisted commands · bounded repair · human approval for "
+        "risky changes · tamper-evident audit."
+    )
 
 
 main()
