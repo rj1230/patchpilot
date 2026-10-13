@@ -361,27 +361,6 @@ See [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) for controls, tests, and know
 
 ---
 
-## 🗺️ Roadmap
-
-- [ ] Published benchmark results with baseline and holdout splits
-- [ ] Coverage-delta and dependency/secret-scanning gates
-- [ ] OpenTelemetry tracing and metrics dashboards
-- [ ] Postgres/pgvector data plane and queue-backed workers
-- [ ] LangGraph-based agent orchestration
-- [ ] GitHub App installation flow with minimum permissions
-- [ ] Policy simulation and dry-run mode
-
----
-
-## ⚠️ Known Limitations
-
-- Currently supports Python repositories using pytest and Ruff.
-- GitHub is the only supported forge.
-- Authentication, infrastructure, migration, and CI changes are blocked by default.
-- Docker-based sandboxing requires Docker to be installed and running locally.
-
----
-
 ## 📄 License
 
 Released under the [MIT License](LICENSE).
