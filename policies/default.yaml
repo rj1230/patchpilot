@@ -1,0 +1,23 @@
+autonomy:
+  create_pull_request: true
+  auto_merge: false
+  deploy_to_production: false
+limits:
+  max_files_changed: 8
+  max_patch_lines: 300
+  max_patch_attempts: 3
+  max_runtime_minutes: 20
+  max_llm_calls: 12
+protected_paths:
+  - ".github/workflows/**"
+  - "infra/**"
+  - "terraform/**"
+  - "**/migrations/**"
+  - "**/auth/**"
+  - "**/*secret*"
+required_checks: [lint, unit_tests]   # add dependency_scan once the audited runner image exists
+human_approval:
+  risk_levels: [medium, high]
+  coverage_delta_negative: true
+  files_changed_over: 5
+repository_allowlist: []
